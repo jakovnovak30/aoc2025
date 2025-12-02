@@ -6,6 +6,9 @@
    (read-file day false))
 
   ([day example]
+   (read-file day example "\n"))
+
+  ([day example delimiter]
    (let [file-path
          (if example
            (format "resources/example%d.txt" day)
@@ -13,4 +16,4 @@
 
      (->
       (slurp file-path)
-      (str/split-lines)))))
+      (str/split (re-pattern delimiter))))))
