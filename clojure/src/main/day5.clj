@@ -28,15 +28,52 @@
              (>= index prvi)
              (<= index drugi))))))
 
-(defn update-once [ranges]
-  ())
+(defn add-ranges [ranges]
+  (let [new-ranges
+        (filterv (fn [e] (not (nil? e)))
+                 (for [i (range (count ranges))
+                       j (range (inc i) (count ranges))]
+                   (let [range1   (get ranges i)
+                         range2   (get ranges j)
+                         min1     (get range1 0)
+                         min2     (get range2 0)
+                         max1     (get range1 1)
+                         max2     (get range2 1)]
+                     (if
+                      (or
+                       (and (<= min2 max1) (>= min2 min1))
+                       (and (<= min1 max2) (>= min1 min2))
+                       (and (>= max1 min2) (<= max1 max2))
+                       (and (>= max2 min1) (<= max2 max1)))
+                       [(min min1 min2) (max max1 max2)]
+                       nil))))]
+    (apply conj ranges new-ranges)))
 
-(defn update-ranges [ranges]
+(defn remove-redundant [ranges]
+  (filterv (fn [e1] (not (reduce (fn [acc e2]
+                                   (if (and
+                                        (not= e1 e2)
+                                        (>= (get e1 0) (get e2 0))
+                                        (<= (get e1 1) (get e2 1)))
+                                     true
+                                     acc))
+
+                                 false
+                                 ranges)))
+           ranges))
+
+(defn update-once [ranges]
+  (->
+   ranges
+   (add-ranges)
+   (remove-redundant)))
+
+(defn update-ranges [ranges limit]
   (let [new-ranges  (update-once ranges)]
-    (if (= (count ranges) (count new-ranges))
+    (if (or (= 10 limit )(= (count ranges) (count new-ranges)))
       ranges
 
-      (update-ranges new-ranges))))
+      (update-ranges new-ranges (inc limit)))))
 
 (defn solve1 [example]
   (let [input     (parse-input example)
@@ -52,12 +89,10 @@
 (defn solve2 [example]
   (let [input     (parse-input example)
         ranges    (:ranges input)]
-    (->
-     (reduce (fn [acc e]
-               (let [prvi    (get e 0)
-                     drugi   (get e 1)
-                     vektor  (range prvi (inc drugi))]
-                 (apply conj acc vektor)))
-             #{}
-             ranges)
-     (count))))
+    (let [updated-ranges (update-ranges ranges 0)]
+      (->>
+       (map (fn [e] (let [manji (get e 0)
+                          veci  (get e 1)]
+                      (inc (- veci manji))))
+            updated-ranges)
+       (reduce +)))))
