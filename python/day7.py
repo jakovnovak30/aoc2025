@@ -34,6 +34,24 @@ def count_beams(x, y):
         count_beams(x-1, y)
         count_beams(x+1, y)
         return
+
+@cache
+def count_timelines(x, y):
+    global splited_coords
+    global input
+
+    X = len(input[0])
+    Y = len(input)
+
+    if x < 0 or x >= X:
+        return 1
+    elif y < 0 or y >= Y:
+        return 1
+
+    if input[y][x] == '.' or input[y][x] == 'S':
+        return count_timelines(x, y+1)
+    elif input[y][x] == '^':
+        return count_timelines(x-1, y) + count_timelines(x+1, y)
     
 
 if __name__ == '__main__':
@@ -46,3 +64,4 @@ if __name__ == '__main__':
 
     count_beams(start_x, start_y)
     print(len(splited_coords))
+    print(count_timelines(start_x, start_y))
