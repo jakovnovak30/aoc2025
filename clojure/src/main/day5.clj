@@ -40,11 +40,8 @@
                          max1     (get range1 1)
                          max2     (get range2 1)]
                      (if
-                      (or
-                       (and (<= min2 max1) (>= min2 min1))
-                       (and (<= min1 max2) (>= min1 min2))
-                       (and (>= max1 min2) (<= max1 max2))
-                       (and (>= max2 min1) (<= max2 max1)))
+                      (not (or (< max1 min2)
+                               (< max2 min1)))
                        [(min min1 min2) (max max1 max2)]
                        nil))))]
     (apply conj ranges new-ranges)))
@@ -66,11 +63,13 @@
   (->
    ranges
    (add-ranges)
-   (remove-redundant)))
+   (remove-redundant)
+   (set)
+   (vec)))
 
 (defn update-ranges [ranges limit]
   (let [new-ranges  (update-once ranges)]
-    (if (or (= 10 limit )(= (count ranges) (count new-ranges)))
+    (if (or (= 10 limit) (= ranges new-ranges))
       ranges
 
       (update-ranges new-ranges (inc limit)))))
