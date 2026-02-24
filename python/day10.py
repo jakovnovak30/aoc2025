@@ -14,7 +14,7 @@ def parse_input(input):
         indicators = list(map(lambda x: x == '#', filter(lambda x: x != ']' and x != '[', indicators)))
         wiring = list(map(
                       lambda x: set(map(lambda x: int(x), filter(lambda x: x not in ['(', ')', ','], x))), wiring))
-        joltage = set(map(lambda x: int(x), filter(lambda x: x not in ['{', '}', ','], joltage)))
+        joltage = list(map(lambda x: int(''.join(list(filter(lambda x: x not in ['{', '}'], x)))), joltage.split(',')))
 
         yield indicators, wiring, joltage
         '''
@@ -54,10 +54,43 @@ def calculate_min(indicators, wiring) -> int:
 
     return solver.model()[total_presses].as_long()
 
+def calculate_min2(joltage, wiring) -> int:
+    solver = z3.Optimize()
+    button_presses = z3.IntVector('b_presses', len(wiring))
+   
+    # save which wires activate which joltage, index is joltage, element is wire
+    wire_joltage = [set()] * len(joltage)
+
+    for i, wire in enumerate(wiring):
+        solver.add(button_presses[i] >= 0)
+        for joltage_index in wire:
+            wire_joltage[joltage_index] = wire_joltage[joltage_index] | set({i})
+
+    for joltage_index, wires in enumerate(wire_joltage):
+        sumation = z3.Sum([button_presses[w] for w in wires])
+
+        # most important check
+        solver.add(sumation == joltage[joltage_index])
+
+    total_presses = z3.Int('total_presses')
+    solver.add(total_presses == z3.Sum(button_presses))
+    solver.minimize(total_presses)
+    solver.check()
+    solver.model()
+
+    return solver.model()[total_presses].as_long()
+
 def part1(input) -> int:
     minimum = 0
     for indicators, wiring, _ in parse_input(input):
         minimum += calculate_min(indicators, wiring)
+
+    return minimum
+
+def part2(input) -> int:
+    minimum = 0
+    for _, wiring, joltage in parse_input(input):
+        minimum += calculate_min2(joltage, wiring)
 
     return minimum
 
@@ -70,3 +103,4 @@ if __name__ == '__main__':
             input.append(line.strip())
 
     print(part1(input))
+    print(part2(input))
